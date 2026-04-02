@@ -1,0 +1,61 @@
+# Cargar librerías
+library(readxl)
+library(dplyr)
+# Leer la tabla
+tabla_riesgo <- read_excel("valores pld modelo bayesiano.xlsx", sheet = 1)
+# Especificar la configuración base del producto               
+producto_base <- data.frame(
+    INV_FONDO = "Solo Pesos",
+    BENEF_TERCERO = "No",
+    PERFIL_INVERSION = "Conservador",
+    RESIDENCIA = "Nacional",
+    PAGO_METODO = "Solo Transferencia",
+    MONEDA_APORT = "Solo MXN",
+    TIPO_CLIENTE = "Persona Física",
+    TRANSFER_TERCERO = "No",
+    LIQUIDEZ = "Permitido",
+    LIMITE_INVERSION = "Límite AML",
+    CLIENTE_PERFILADO = "Sí",
+    stringsAsFactors = FALSE
+)
+# Buscar la fila correspondiente en la tabla de riesgo
+resultado <- tabla_riesgo %>%
+    filter(
+        INV_FONDO == producto_base$INV_FONDO &
+            BENEF_TERCERO == producto_base$BENEF_TERCERO &
+            PERFIL_INVERSION == producto_base$PERFIL_INVERSION &
+            RESIDENCIA == producto_base$RESIDENCIA &
+            PAGO_METODO == producto_base$PAGO_METODO &
+            MONEDA_APORT == producto_base$MONEDA_APORT &
+            TIPO_CLIENTE == producto_base$TIPO_CLIENTE &
+            TRANSFER_TERCERO == producto_base$TRANSFER_TERCERO &
+            LIQUIDEZ == producto_base$LIQUIDEZ &
+            LIMITE_INVERSION == producto_base$LIMITE_INVERSION &
+            CLIENTE_PERFILADO == producto_base$CLIENTE_PERFILADO
+    )
+# Mostrar el resultado de probabilidades y grado de riesgo
+if(nrow(resultado) == 0){
+    print("No se encontró una combinación exacta. Verifica los valores o la tabla.")
+} else {
+    print("Probabilidades de riesgo:")
+    print(resultado[, c("P(Bajo)", "P(Medio)", "P(Alto)")])
+    
+    probabilidades <- as.numeric(resultado[1, c("P(Bajo)", "P(Medio)", "P(Alto)")])
+    nombres_grados <- c("Bajo", "Medio", "Alto")
+    grado_riesgo <- nombres_grados[which.max(probabilidades)]
+    cat("Clasificación sugerida:", grado_riesgo, "\n")
+}
+barplot(
+    100 * probabilidades,
+    names.arg = nombres_grados,
+    col = c("forestgreen", "gold", "firebrick"),
+    ylim = c(0,100),
+    main = "Distribución de riesgo del producto",
+    ylab = "Probabilidad (%)"
+)
+text(
+    x = 1:3, 
+    y = 100 * probabilidades, 
+    label = paste0(round(100 * probabilidades, 1), "%"),
+    pos = 3
+)
